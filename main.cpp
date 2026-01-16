@@ -14,7 +14,7 @@ struct Task
 
     int id;
     string name;
-
+    bool isComplete = false;
     int priority;
     string creation_date;
     string deadline_date;
@@ -62,7 +62,7 @@ vector<User> loadUsers()
             task.id = t["id"];
             task.priority = t["priority"];
             task.name = t["name"];
-
+            task.isComplete = t["isComplete"];
             task.creation_date = t.value("creation_date", "");
             task.deadline_date = t.value("deadline_date", "");
             for (auto &st : t["subtasks"])
@@ -70,6 +70,7 @@ vector<User> loadUsers()
                 Task subtask;
                 subtask.id = st["id"];
                 subtask.name = st["name"];
+                subtask.isComplete = st["isComplete"];
                 subtask.priority = st["priority"];
                 subtask.creation_date = st.value("creation_date", "");
                 subtask.deadline_date = st.value("deadline_date", "");
@@ -100,6 +101,7 @@ void updateUsers()
             json j;
             Task curr = temp.top();
             j["id"] = curr.id;
+            j["isComplete"] = curr.isComplete;
             j["name"] = curr.name;
             j["priority"] = curr.priority;
             j["creation_date"] = curr.creation_date;
@@ -112,7 +114,7 @@ void updateUsers()
                 sub["id"] = sb.id;
                 sub["priority"] = sb.priority;
                 sub["name"] = sb.name;
-
+                sub["isComplete"] = sb.isComplete;
                 sub["creation_date"] = sb.creation_date;
                 sub["deadline_date"] = sb.deadline_date;
                 j["subtasks"].push_back(sub);
@@ -202,13 +204,141 @@ string getCurrentDate()
 {
     time_t now = time(nullptr);
     tm *ltm = localtime(&now);
-    int year = 1900 +  ltm->tm_year;
+    int year = 1900 + ltm->tm_year;
     int month = 1 + ltm->tm_mon;
     int day = ltm->tm_mday;
     return to_string(year) + "-" +
-    (month < 10 ? "0": "") + to_string(month) + "-" +
-    (day < 10 ? "0": "") + to_string(day);
+           (month < 10 ? "0" : "") + to_string(month) + "-" +
+           (day < 10 ? "0" : "") + to_string(day);
 }
+bool taskDone(int taskId)
+{
+    if (!curr_user)
+        return false;
+
+    priority_queue<Task> temp;
+    bool found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task t = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (t.id == taskId)
+        {
+            t.isComplete = true;
+            found = true;
+        }
+
+        temp.push(t);
+    }
+
+    curr_user->tasks = temp;
+    if (found)
+        updateUsers();
+    return found;
+}
+
+bool taskNotDone(int taskId)
+{
+    if (!curr_user)
+        return false;
+
+    priority_queue<Task> temp;
+    bool found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task t = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (t.id == taskId)
+        {
+            t.isComplete = false;
+            found = true;
+        }
+
+        temp.push(t);
+    }
+
+    curr_user->tasks = temp;
+    if (found)
+        updateUsers();
+    return found;
+}
+
+bool subtaskDone(int taskId, int subtaskId)
+{
+    if (!curr_user)
+        return false;
+
+    priority_queue<Task> temp;
+    bool task_found = false, subtask_found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task t = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (t.id == taskId)
+        {
+            task_found = true;
+            for (auto &s : t.subtasks)
+            {
+                if (s.id == subtaskId)
+                {
+                    s.isComplete = true;
+                    subtask_found = true;
+                    break;
+                }
+            }
+        }
+
+        temp.push(t);
+    }
+
+    curr_user->tasks = temp;
+    if (task_found && subtask_found)
+        updateUsers();
+    return subtask_found;
+}
+
+bool subtaskNotDone(int taskId, int subtaskId)
+{
+    if (!curr_user)
+        return false;
+
+    priority_queue<Task> temp;
+    bool task_found = false, subtask_found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task t = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (t.id == taskId)
+        {
+            task_found = true;
+            for (auto &s : t.subtasks)
+            {
+                if (s.id == subtaskId)
+                {
+                    s.isComplete = false;
+                    subtask_found = true;
+                    break;
+                }
+            }
+        }
+
+        temp.push(t);
+    }
+
+    curr_user->tasks = temp;
+    if (task_found && subtask_found)
+        updateUsers();
+    return subtask_found;
+}
+
 bool login()
 {
     string email;
@@ -452,9 +582,8 @@ bool deleteSubtask()
 
             // Remove subtask using erase-remove_if
             auto &subs = curr.subtasks;
-            auto it = remove_if(subs.begin(), subs.end(), [subtask_id](const Task &s) {
-                return s.id == subtask_id;
-            });
+            auto it = remove_if(subs.begin(), subs.end(), [subtask_id](const Task &s)
+                                { return s.id == subtask_id; });
 
             if (it != subs.end())
             {
@@ -777,7 +906,9 @@ int main()
             if (choice == 1)
             {
                 createTask();
-            }else if (choice == 2){
+            }
+            else if (choice == 2)
+            {
                 createSubtask();
             } else if (choice == 3) {
                 displayTasks();
@@ -789,7 +920,6 @@ int main()
                 updateSubtaskById();
             }
         }
-   
     }
 
 

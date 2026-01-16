@@ -206,8 +206,8 @@ string getCurrentDate()
     int month = 1 + ltm->tm_mon;
     int day = ltm->tm_mday;
     return to_string(year) + "-" +
-    (month < 0 ? "0": "") + to_string(month) + "-" +
-    (day < 0 ? "0": "") + to_string(day);
+    (month < 10 ? "0": "") + to_string(month) + "-" +
+    (day < 10 ? "0": "") + to_string(day);
 }
 bool login()
 {
@@ -226,7 +226,7 @@ bool login()
     }
     for (auto &u : users)
     {
-        if (u.email == email & u.password == password)
+        if (u.email == email && u.password == password)
         {
             curr_user_email = u.email;
             for (auto &u : users)
@@ -286,6 +286,7 @@ bool createTask()
     cout << "Enter task deadline_date year/mm/dd: ";
     getline(cin, deadline_date);
 
+    new_task.id = generateRandomDigit();
     new_task.creation_date = getCurrentDate();
     new_task.priority = priority;
     new_task.name = name;
@@ -293,7 +294,88 @@ bool createTask()
     curr_user->tasks.push(new_task);
     updateUsers();
     cout << "tasks updated successfully" << endl;
+
+    return true;
 }
+
+bool createSubtask()
+{
+    if (curr_user == nullptr)
+    {
+        cout << "No user logged in" << endl;
+        return false;
+    }
+
+    int task_id;
+    cout << "Enter parent task ID: ";
+    cin >> task_id;
+    cin.ignore();
+
+    string name;
+    string priority_description;
+    int priority;
+    string deadline_date;
+
+    priority_queue<Task> temp;
+    bool found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task curr = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (curr.id == task_id)
+        {
+            found = true;
+
+            cout << "Enter subtask name: ";
+            getline(cin, name);
+
+            cout << "Enter priority (high, medium, low): ";
+            getline(cin, priority_description);
+
+            if (priority_description == "high")
+                priority = 3;
+            else if (priority_description == "medium")
+                priority = 2;
+            else if (priority_description == "low")
+                priority = 1;
+            else
+            {
+                cout << "Invalid priority level" << endl;
+                return false;
+            }
+
+            cout << "Enter subtask deadline (yyyy/mm/dd): ";
+            getline(cin, deadline_date);
+
+            Task subtask;
+            subtask.id = generateRandomDigit();
+            subtask.name = name;
+            subtask.priority = priority;
+            subtask.creation_date = getCurrentDate();
+            subtask.deadline_date = deadline_date;
+
+            curr.subtasks.push_back(subtask);
+        }
+
+        temp.push(curr);
+    }
+
+    curr_user->tasks = temp;
+
+    if (!found)
+    {
+        cout << "Task ID not found" << endl;
+        return false;
+    }
+
+    updateUsers();
+    cout << "Subtask added successfully" << endl;
+    return true;
+}
+
+
 
 int main()
 {
@@ -313,11 +395,15 @@ int main()
         {
             int choice;
             cout << "1.create task" << endl;
+            cout << "2. create Subtask" << endl;
             cin >> choice;
             cin.ignore();
+
             if (choice == 1)
             {
                 createTask();
+            }else if (choice == 2){
+                createSubtask();
             }
         }
    

@@ -632,9 +632,14 @@ void displayTasks()
     {
         Task t = temp.top();
         temp.pop();
-
+                string isCompleted;
+                if(t.isComplete == true){
+                    isCompleted = "Completed";
+                }else{
+                    isCompleted = "Not completed";
+                }
         string p = (t.priority == 3) ? "high" : (t.priority == 2) ? "medium" : "low";
-        cout << "Task ID: " << t.id << " | Name: " << t.name << " | Priority: " << p
+        cout << "Task ID: " << t.id << " | Name: " << t.name << " | status: "<<isCompleted << "  | Priority: " << p
              << " | Created: " << t.creation_date << " | Deadline: " << t.deadline_date << endl;
 
         if (!t.subtasks.empty())
@@ -642,8 +647,14 @@ void displayTasks()
             cout << "  Subtasks:" << endl;
             for (auto &st : t.subtasks)
             {
+                string isCompleted;
+                if(st.isComplete == true){
+                    isCompleted = "Completed";
+                }else{
+                    isCompleted = "Not completed";
+                }
                 string sp = (st.priority == 3) ? "high" : (st.priority == 2) ? "medium" : "low";
-                cout << "    Subtask ID: " << st.id << " | Name: " << st.name << " | Priority: " << sp
+                cout << "    Subtask ID: " << st.id << " | Name: " << st.name << " | status: "<<isCompleted << " | Priority: " << sp
                      << " | Created: " << st.creation_date << " | Deadline: " << st.deadline_date << endl;
             }
         }
@@ -689,7 +700,16 @@ bool searchTaskByName()
         {
             found = true;
             string p = (t.priority == 3) ? "high" : (t.priority == 2) ? "medium" : "low";
-            cout << "Task ID: " << t.id << " | Name: " << t.name << " | Priority: " << p
+            string isCompleted;
+            if (t.isComplete == true)
+            {
+                isCompleted = "Completed";
+            }
+            else
+            {
+                isCompleted = "Not completed";
+            }
+            cout << "Task ID: " << t.id << " | Name: " << t.name << " | status: " << isCompleted << " | Priority: " << p
                  << " | Created: " << t.creation_date << " | Deadline: " << t.deadline_date << endl;
 
             if (!t.subtasks.empty())
@@ -698,7 +718,16 @@ bool searchTaskByName()
                 for (auto &st : t.subtasks)
                 {
                     string sp = (st.priority == 3) ? "high" : (st.priority == 2) ? "medium" : "low";
-                    cout << "    Subtask ID: " << st.id << " | Name: " << st.name << " | Priority: " << sp
+                    string sisCompleted;
+                    if (st.isComplete == true)
+                    {
+                        sisCompleted = "Completed";
+                    }
+                    else
+                    {
+                        sisCompleted = "Not completed";
+                    }
+                    cout << "    Subtask ID: " << st.id << " | Name: " << st.name << " | status: " << sisCompleted << " | Priority: " << sp
                          << " | Created: " << st.creation_date << " | Deadline: " << st.deadline_date << endl;
                 }
             }

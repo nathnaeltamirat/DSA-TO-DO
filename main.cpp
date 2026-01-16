@@ -36,7 +36,14 @@ struct User
 
 vector<User> users;
 User *curr_user = nullptr;
-
+bool updateTaskById();
+bool updateSubtaskById();
+void displayTasksByFilter();
+bool deleteTask();
+bool exportStatusToJson();
+void updateUsers();
+bool deleteSubtask();
+bool createSubtask();
 vector<User> loadUsers()
 {
     users.clear();
@@ -82,6 +89,180 @@ vector<User> loadUsers()
     }
     return users;
 };
+bool taskDone()
+{
+    if (!curr_user)
+        return false;
+    int taskId;
+    cout << "Enter task id: ";
+    cin >> taskId;
+
+    priority_queue<Task> temp;
+    bool found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task t = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (t.id == taskId)
+        {
+            t.isComplete = true;
+            found = true;
+        }
+
+        temp.push(t);
+    }
+
+    curr_user->tasks = temp;
+    if (found)
+    {
+        updateUsers();
+        cout << "task completed" << endl;
+    }else{
+        cout << "error happen" << endl;
+    }
+
+    return found;
+}
+
+bool taskNotDone()
+{
+    if (!curr_user)
+        return false;
+    int taskId;
+    cout << "Enter task id: ";
+    cin >> taskId;
+
+    priority_queue<Task> temp;
+    bool found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task t = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (t.id == taskId)
+        {
+            t.isComplete = false;
+            found = true;
+        }
+
+        temp.push(t);
+    }
+
+    curr_user->tasks = temp;
+    if (found)
+    {
+        updateUsers();
+        cout << "task completed" << endl;
+    }else{
+        cout << "error" << endl;
+    }
+    return found;
+}
+
+bool subtaskDone()
+{
+    int taskId;
+    int subtaskId;
+    cout << "Enter task id: ";
+    cin >> taskId;
+    cin.ignore();
+    cout << "Enter subtask id: ";
+    cin >> subtaskId;
+    cin.ignore();
+    if (!curr_user)
+        return false;
+
+    priority_queue<Task> temp;
+    bool task_found = false, subtask_found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task t = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (t.id == taskId)
+        {
+            task_found = true;
+            for (auto &s : t.subtasks)
+            {
+                if (s.id == subtaskId)
+                {
+                    s.isComplete = true;
+                    subtask_found = true;
+                    break;
+                }
+            }
+        }
+
+        temp.push(t);
+    }
+
+    curr_user->tasks = temp;
+    if (task_found && subtask_found)
+    {
+        updateUsers();
+        cout << "subtask completed" << endl;
+    }
+    else
+    {
+        cout << "error doing completion" << endl;
+    }
+    return subtask_found;
+}
+
+bool subtaskNotDone()
+{
+    int taskId;
+    int subtaskId;
+    cout << "Enter task id: ";
+    cin >> taskId;
+    cin.ignore();
+    cout << "Enter subtask id: ";
+    cin >> subtaskId;
+    cin.ignore();
+    if (!curr_user)
+        return false;
+
+    priority_queue<Task> temp;
+    bool task_found = false, subtask_found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task t = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (t.id == taskId)
+        {
+            task_found = true;
+            for (auto &s : t.subtasks)
+            {
+                if (s.id == subtaskId)
+                {
+                    s.isComplete = false;
+                    subtask_found = true;
+                    break;
+                }
+            }
+        }
+
+        temp.push(t);
+    }
+
+    curr_user->tasks = temp;
+    if (task_found && subtask_found)
+    {
+        updateUsers();
+        cout << "subtask completion removed successfully" << endl;
+    }
+    else
+    {
+        cout << "error doing completion" << endl;
+    }
+    return subtask_found;
+}
 
 void updateUsers()
 {
@@ -143,6 +324,169 @@ bool emailExist(string &email)
         }
     }
     return false;
+}
+
+void displayTasksByFilter()
+{
+    if (curr_user == nullptr)
+    {
+        cout << "No user logged in" << endl;
+        return;
+    }
+
+    vector<Task> list;
+    priority_queue<Task> temp = curr_user->tasks;
+    while (!temp.empty())
+    {
+        list.push_back(temp.top());
+        temp.pop();
+    }
+
+    cout << "Choose filter:\n1. Recently created\n2. Farest created\n3. Nearest deadline\n4. Farest deadline" << endl;
+    int fchoice;
+    cin >> fchoice;
+    cin.ignore();
+
+    auto normalizeDate = [](const string &d) -> string
+    {
+        if (d.empty())
+            return string();
+        string s = d;
+        for (auto &c : s)
+            if (c == '/')
+                c = '-';
+        string digits;
+        for (char c : s)
+            if (isdigit((unsigned char)c))
+                digits.push_back(c);
+        // Expect YYYYMMDD
+        if (digits.size() >= 8)
+            return digits.substr(0, 8);
+        // fallback: pad to something comparable
+        while (digits.size() < 8)
+            digits.push_back('0');
+        return digits;
+    };
+
+    if (fchoice == 1)
+    {
+        sort(list.begin(), list.end(), [&](const Task &a, const Task &b)
+             { return normalizeDate(a.creation_date) > normalizeDate(b.creation_date); });
+    }
+    else if (fchoice == 2)
+    {
+        sort(list.begin(), list.end(), [&](const Task &a, const Task &b)
+             { return normalizeDate(a.creation_date) < normalizeDate(b.creation_date); });
+    }
+    else if (fchoice == 3)
+    {
+        sort(list.begin(), list.end(), [&](const Task &a, const Task &b)
+             {
+                 string da = normalizeDate(a.deadline_date);
+                 string db = normalizeDate(b.deadline_date);
+                 if (da.empty() && db.empty())
+                     return false;
+                 if (da.empty())
+                     return false; // put empty deadlines at end
+                 if (db.empty())
+                     return true;
+                 return da < db; });
+    }
+    else if (fchoice == 4)
+    {
+        sort(list.begin(), list.end(), [&](const Task &a, const Task &b)
+             {
+                 string da = normalizeDate(a.deadline_date);
+                 string db = normalizeDate(b.deadline_date);
+                 if (da.empty() && db.empty())
+                     return false;
+                 if (da.empty())
+                     return false; // place tasks with no deadline at end
+                 if (db.empty())
+                     return true;
+                 return da > db; });
+    }
+    else
+    {
+        cout << "Invalid choice" << endl;
+        return;
+    }
+
+    if (list.empty())
+    {
+        cout << "No tasks found" << endl;
+        return;
+    }
+
+    for (auto &t : list)
+    {
+        string isCompleted = t.isComplete ? "Completed" : "Not completed";
+        string p = (t.priority == 3) ? "high" : (t.priority == 2) ? "medium"
+                                                                  : "low";
+        cout << "Task ID: " << t.id << " | Name: " << t.name << " | status: " << isCompleted << " | Priority: " << p
+             << " | Created: " << t.creation_date << " | Deadline: " << t.deadline_date << endl;
+        if (!t.subtasks.empty())
+        {
+            cout << "  Subtasks:" << endl;
+            for (auto &st : t.subtasks)
+            {
+                string sisCompleted = st.isComplete ? "Completed" : "Not completed";
+                string sp = (st.priority == 3) ? "high" : (st.priority == 2) ? "medium"
+                                                                             : "low";
+                cout << "    Subtask ID: " << st.id << " | Name: " << st.name << " | status: " << sisCompleted << " | Priority: " << sp
+                     << " | Created: " << st.creation_date << " | Deadline: " << st.deadline_date << endl;
+            }
+        }
+    }
+    int choice;
+    cout << "1.Edit task\n"
+            "2.Edit subtask\n"
+            "3.Delete task\n"
+            "4.Delete subtask\n"
+            "5.Mark complete task\n"
+            "6.Mark complete subtask\n"
+            "7.Mark uncomplete task\n"
+            "8.Mark uncomplete subtask\n"
+            "9.Add subtask\n"
+            "10.Any number to continue\n";
+    cin >> choice;
+    cin.clear();
+    if (choice == 1)
+    {
+        updateTaskById();
+    }
+    else if (choice == 2)
+    {
+        updateSubtaskById();
+    }
+    else if (choice == 3)
+    {
+        deleteTask();
+    }
+    else if (choice == 4)
+    {
+        deleteSubtask();
+    }
+    else if (choice == 5)
+    {
+        taskDone();
+    }
+    else if (choice == 6)
+    {
+        subtaskDone();
+    }
+    else if (choice == 7)
+    {
+        taskNotDone();
+    }
+    else if (choice == 8)
+    {
+        subtaskNotDone();
+    }
+    else if (choice == 9)
+    {
+        createSubtask();
+    }
 }
 
 bool saveUser(
@@ -237,133 +581,6 @@ string getCurrentDate()
            (month < 10 ? "0" : "") + to_string(month) + "-" +
            (day < 10 ? "0" : "") + to_string(day);
 }
-bool taskDone(int taskId)
-{
-    if (!curr_user)
-        return false;
-
-    priority_queue<Task> temp;
-    bool found = false;
-
-    while (!curr_user->tasks.empty())
-    {
-        Task t = curr_user->tasks.top();
-        curr_user->tasks.pop();
-
-        if (t.id == taskId)
-        {
-            t.isComplete = true;
-            found = true;
-        }
-
-        temp.push(t);
-    }
-
-    curr_user->tasks = temp;
-    if (found)
-        updateUsers();
-    return found;
-}
-
-bool taskNotDone(int taskId)
-{
-    if (!curr_user)
-        return false;
-
-    priority_queue<Task> temp;
-    bool found = false;
-
-    while (!curr_user->tasks.empty())
-    {
-        Task t = curr_user->tasks.top();
-        curr_user->tasks.pop();
-
-        if (t.id == taskId)
-        {
-            t.isComplete = false;
-            found = true;
-        }
-
-        temp.push(t);
-    }
-
-    curr_user->tasks = temp;
-    if (found)
-        updateUsers();
-    return found;
-}
-
-bool subtaskDone(int taskId, int subtaskId)
-{
-    if (!curr_user)
-        return false;
-
-    priority_queue<Task> temp;
-    bool task_found = false, subtask_found = false;
-
-    while (!curr_user->tasks.empty())
-    {
-        Task t = curr_user->tasks.top();
-        curr_user->tasks.pop();
-
-        if (t.id == taskId)
-        {
-            task_found = true;
-            for (auto &s : t.subtasks)
-            {
-                if (s.id == subtaskId)
-                {
-                    s.isComplete = true;
-                    subtask_found = true;
-                    break;
-                }
-            }
-        }
-
-        temp.push(t);
-    }
-
-    curr_user->tasks = temp;
-    if (task_found && subtask_found)
-        updateUsers();
-    return subtask_found;
-}
-
-bool subtaskNotDone(int taskId, int subtaskId)
-{
-    if (!curr_user)
-        return false;
-
-    priority_queue<Task> temp;
-    bool task_found = false, subtask_found = false;
-
-    while (!curr_user->tasks.empty())
-    {
-        Task t = curr_user->tasks.top();
-        curr_user->tasks.pop();
-
-        if (t.id == taskId)
-        {
-            task_found = true;
-            for (auto &s : t.subtasks)
-            {
-                if (s.id == subtaskId)
-                {
-                    s.isComplete = false;
-                    subtask_found = true;
-                    break;
-                }
-            }
-        }
-
-        temp.push(t);
-    }
-
-    curr_user->tasks = temp;
-    if (task_found && subtask_found)
-        updateUsers();
-    return subtask_found;
-}
 
 bool login()
 {
@@ -403,7 +620,7 @@ bool login()
                     curr_user = &u;
                 }
             }
-            cout << "registred successfull" << endl;
+            cout << "Logged in successfull" << endl;
             return true;
         }
     }
@@ -456,7 +673,7 @@ bool createTask()
         return false;
     }
 
-    cout << "Enter task deadline_date year/mm/dd: ";
+    cout << "Enter task deadline_date year-mm-dd: ";
     getline(cin, deadline_date);
     // Empty check
     if (deadline_date.empty())
@@ -467,10 +684,10 @@ bool createTask()
 
     // Format check: yyyy/mm/dd
     if (deadline_date.length() != 10 ||
-        deadline_date[4] != '/' ||
-        deadline_date[7] != '/')
+        deadline_date[4] != '-' ||
+        deadline_date[7] != '-')
     {
-        cout << "Invalid date format. Use yyyy/mm/dd\n";
+        cout << "Invalid date format. Use yyyy-mm-dd\n";
         return false;
     }
 
@@ -575,7 +792,7 @@ bool createSubtask()
                 return false;
             }
 
-            cout << "Enter subtask deadline (yyyy/mm/dd): ";
+            cout << "Enter subtask deadline (yyyy-mm-dd): ";
             getline(cin, deadline_date);
             // Empty check
             if (deadline_date.empty())
@@ -586,8 +803,8 @@ bool createSubtask()
 
             // Format check: yyyy/mm/dd
             if (deadline_date.length() != 10 ||
-                deadline_date[4] != '/' ||
-                deadline_date[7] != '/')
+                deadline_date[4] != '-' ||
+                deadline_date[7] != '-')
             {
                 cout << "Invalid date format. Use yyyy/mm/dd\n";
                 return false;
@@ -825,11 +1042,6 @@ bool updateProfile()
             cout << "Invalid email format!\n";
             return false;
         }
-        if (emailExist(updated_email))
-        {
-            cout << "Email already exists.\n";
-            return false;
-        }
 
         curr_user->email = updated_email;
         cout << "Email updated successfully!\n";
@@ -881,11 +1093,6 @@ bool updateProfile()
             upd_email.find('.') == string::npos)
         {
             cout << "Invalid email format!\n";
-            return false;
-        }
-        if (emailExist(upd_email))
-        {
-            cout << "Email already exists.\n";
             return false;
         }
 
@@ -971,6 +1178,55 @@ void displayTasks()
             }
         }
     }
+    int choice;
+    cout << "1.Edit task\n"
+            "2.Edit subtask\n"
+            "3.Delete task\n"
+            "4.Delete subtask\n"
+            "5.Mark complete task\n"
+            "6.Mark complete subtask\n"
+            "7.Mark uncomplete task\n"
+            "8.Mark uncomplete subtask\n"
+            "9.Add subtask\n"
+            "10.Any number to continue\n";
+    cin >> choice;
+    cin.clear();
+    if (choice == 1)
+    {
+        updateTaskById();
+    }
+    else if (choice == 2)
+    {
+        updateSubtaskById();
+    }
+    else if (choice == 3)
+    {
+        deleteTask();
+    }
+    else if (choice == 4)
+    {
+        deleteSubtask();
+    }
+    else if (choice == 5)
+    {
+        taskDone();
+    }
+    else if (choice == 6)
+    {
+        subtaskDone();
+    }
+    else if (choice == 7)
+    {
+        taskNotDone();
+    }
+    else if (choice == 8)
+    {
+        subtaskNotDone();
+    }
+    else if (choice == 9)
+    {
+        createSubtask();
+    }
 }
 
 string toLower(const string &s)
@@ -980,80 +1236,6 @@ string toLower(const string &s)
         c = tolower((unsigned char)c);
     return r;
 }
-
-bool searchTaskByName()
-{
-    if (curr_user == nullptr)
-    {
-        cout << "No user logged in" << endl;
-        return false;
-    }
-
-    string query;
-    cout << "Enter task name to search: ";
-    getline(cin, query);
-    if (query.empty())
-    {
-        cout << "Empty query" << endl;
-        return false;
-    }
-
-    string ql = toLower(query);
-    priority_queue<Task> temp = curr_user->tasks;
-    bool found = false;
-
-    while (!temp.empty())
-    {
-        Task t = temp.top();
-        temp.pop();
-
-        string tl = toLower(t.name);
-        if (tl.find(ql) != string::npos)
-        {
-            found = true;
-            string p = (t.priority == 3) ? "high" : (t.priority == 2) ? "medium"
-                                                                      : "low";
-            string isCompleted;
-            if (t.isComplete == true)
-            {
-                isCompleted = "Completed";
-            }
-            else
-            {
-                isCompleted = "Not completed";
-            }
-            cout << "Task ID: " << t.id << " | Name: " << t.name << " | status: " << isCompleted << " | Priority: " << p
-                 << " | Created: " << t.creation_date << " | Deadline: " << t.deadline_date << endl;
-
-            if (!t.subtasks.empty())
-            {
-                cout << "  Subtasks:" << endl;
-                for (auto &st : t.subtasks)
-                {
-                    string sp = (st.priority == 3) ? "high" : (st.priority == 2) ? "medium"
-                                                                                 : "low";
-                    string sisCompleted;
-                    if (st.isComplete == true)
-                    {
-                        sisCompleted = "Completed";
-                    }
-                    else
-                    {
-                        sisCompleted = "Not completed";
-                    }
-                    cout << "    Subtask ID: " << st.id << " | Name: " << st.name << " | status: " << sisCompleted << " | Priority: " << sp
-                         << " | Created: " << st.creation_date << " | Deadline: " << st.deadline_date << endl;
-                }
-            }
-        }
-    }
-
-    if (!found)
-        cout << "No matching tasks found" << endl;
-
-    return found;
-}
-
 bool updateTaskById()
 {
     if (curr_user == nullptr)
@@ -1113,13 +1295,13 @@ bool updateTaskById()
                 curr.priority = new_priority;
             }
 
-            cout << "Enter new deadline (yyyy/mm/dd) or leave empty: ";
+            cout << "Enter new deadline (yyyy-mm-dd) or leave empty: ";
             getline(cin, new_deadline);
 
                 // Format check yyyy/mm/dd
                 if (new_deadline.length() != 10 ||
-                    new_deadline[4] != '/' ||
-                    new_deadline[7] != '/')
+                    new_deadline[4] != '-' ||
+                    new_deadline[7] != '-')
                 {
                     cout << "Invalid date format. Use yyyy/mm/dd\n";
                     return false;
@@ -1250,13 +1432,13 @@ bool updateSubtaskById()
                         st.priority = new_priority;
                     }
 
-                    cout << "Enter new deadline (yyyy/mm/dd) or leave empty: ";
+                    cout << "Enter new deadline (yyyy-mm-dd) or leave empty: ";
                     getline(cin, new_deadline);
                 
                         // Format check yyyy/mm/dd
                         if (new_deadline.length() != 10 ||
-                            new_deadline[4] != '/' ||
-                            new_deadline[7] != '/')
+                            new_deadline[4] != '-' ||
+                            new_deadline[7] != '-')
                         {
                             cout << "Invalid date format. Use yyyy/mm/dd\n";
                             return false;
@@ -1317,6 +1499,136 @@ bool updateSubtaskById()
     cout << "Subtask updated successfully" << endl;
     return true;
 }
+
+bool searchTaskByName()
+{
+    if (curr_user == nullptr)
+    {
+        cout << "No user logged in" << endl;
+        return false;
+    }
+
+    string query;
+    cout << "Enter task name to search: ";
+    getline(cin, query);
+    if (query.empty())
+    {
+        cout << "Empty query" << endl;
+        return false;
+    }
+
+    string ql = toLower(query);
+    priority_queue<Task> temp = curr_user->tasks;
+    bool found = false;
+
+    while (!temp.empty())
+    {
+        Task t = temp.top();
+        temp.pop();
+
+        string tl = toLower(t.name);
+        if (tl.find(ql) != string::npos)
+        {
+            found = true;
+            string p = (t.priority == 3) ? "high" : (t.priority == 2) ? "medium"
+                                                                      : "low";
+            string isCompleted;
+            if (t.isComplete == true)
+            {
+                isCompleted = "Completed";
+            }
+            else
+            {
+                isCompleted = "Not completed";
+            }
+            cout << "Task ID: " << t.id << " | Name: " << t.name << " | status: " << isCompleted << " | Priority: " << p
+                 << " | Created: " << t.creation_date << " | Deadline: " << t.deadline_date << endl;
+
+            if (!t.subtasks.empty())
+            {
+                cout << "  Subtasks:" << endl;
+                for (auto &st : t.subtasks)
+                {
+                    string sp = (st.priority == 3) ? "high" : (st.priority == 2) ? "medium"
+                                                                                 : "low";
+                    string sisCompleted;
+                    if (st.isComplete == true)
+                    {
+                        sisCompleted = "Completed";
+                    }
+                    else
+                    {
+                        sisCompleted = "Not completed";
+                    }
+                    cout << "    Subtask ID: " << st.id << " | Name: " << st.name << " | status: " << sisCompleted << " | Priority: " << sp
+                         << " | Created: " << st.creation_date << " | Deadline: " << st.deadline_date << endl;
+                }
+            }
+        }
+    }
+    if (found)
+    {
+        int choice;
+        cout << "1.Edit task\n"
+                "2.Edit subtask\n"
+                "3.Delete task\n"
+                "4.Delete subtask\n"
+                "5.Mark complete task\n"
+                "6.Mark complete subtask\n"
+                "7.Mark uncomplete task\n"
+                "8.Mark uncomplete subtask\n"
+                "9.Add subtask\n"
+                "10.Any number to continue\n";
+        cin >> choice;
+        cin.clear();
+        if (choice == 1)
+        {
+            updateTaskById();
+        }
+        else if (choice == 2)
+        {
+            updateSubtaskById();
+        }
+        else if (choice == 3)
+        {
+            deleteTask();
+        }
+        else if (choice == 4)
+        {
+            deleteSubtask();
+        }
+        else if (choice == 5)
+        {
+            taskDone();
+        }
+        else if (choice == 6)
+        {
+            subtaskDone();
+        }
+        else if (choice == 7)
+        {
+            taskNotDone();
+        }
+        else if (choice == 8)
+        {
+            subtaskNotDone();
+        }
+        else if (choice == 9)
+        {
+            createSubtask();
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    if (!found)
+        cout << "No matching tasks found" << endl;
+
+    return found;
+}
+
 bool exportStatusToJson()
 {
     if (curr_user == nullptr)
@@ -1434,16 +1746,6 @@ bool addUserAdmin()
     }
     cout << "Enter new user's password: ";
     getline(cin, password);
-    if (password.length() < 6)
-    {
-        cout << "Password must be at least 6 characters.\n";
-        return false;
-    }
-    if (full_name.empty() || email.empty() || password.empty())
-    {
-        cout << "All fields are required.\n";
-        return false;
-    }
     User newUser;
     newUser.full_name = full_name;
     newUser.email = email;
@@ -1505,22 +1807,30 @@ void adminDashboard()
     cout << "\n===== ADMIN DASHBOARD =====\n";
     cout << "1. Add User\n";
     cout << "2. Delete User\n";
-    cout << "  3.View All Users\n";
+    cout << "3.View All Users\n";
+    cout << "4. Exit admin panel other number\n";
     cout << "Enter choice: ";
     cin >> choice;
     cin.ignore();
 
-    if (choice == 1)
+    while (true)
     {
-        addUserAdmin();
-    }
-    else if (choice == 2)
-    {
-        deleteUserAdmin();
-    }
-    else if (choice == 3)
-    {
-        viewAllUsers();
+        if (choice == 1)
+        {
+            addUserAdmin();
+        }
+        else if (choice == 2)
+        {
+            deleteUserAdmin();
+        }
+        else if (choice == 3)
+        {
+            viewAllUsers();
+        }
+        else
+        {
+            break;
+        }
     }
 }
 
@@ -1528,59 +1838,75 @@ int main()
 {
     loadUsers();
     int login_choice;
-    cout << "Hey user welcome to AASTU TODO App !!!" << endl;
-    cout << "1.Login\n2.Registerz" << endl;
-    cin >> login_choice;
-    if (cin.fail() || (login_choice != 1 && login_choice != 2))
+    while (true)
     {
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cout << "Invalid choice. Please enter 1 or 2.\n";
-        return 0;
-    }
-
-    cin.ignore();
-    if (login_choice == 2)
-    {
-        signup();
-    }
-    else if (login_choice == 1)
-    {
-        if (login())
+        cout << "Hey user welcome to AASTU TODO App !!!" << endl;
+        cout << "1.Login\n2.Register\n3.AdminLogin\nq.Quit(any number only)" << endl;
+        bool success = false;
+        cin >> login_choice;
+        cin.ignore();
+        if (login_choice == 1)
         {
-            int choice;
-            cout << "1.create task" << endl;
-            cout << "2. create Subtask" << endl;
-            cout << "3. show tasks" << endl;
-            cout << "4. search task by name" << endl;
-            cout << "5. update task by id" << endl;
-            cout << "6. update subtask by id" << endl;
-            cin >> choice;
-            cin.ignore();
-
-            if (choice == 1)
+            if (login())
             {
-                createTask();
+                success = true;
             }
-            else if (choice == 2)
+        }
+        else if (login_choice == 2)
+        {
+            if (signup())
             {
-                createSubtask();
+                success = true;
             }
-            else if (choice == 3)
+        }
+        else if (login_choice == 3)
+        {
+            if (authenticateAdmin())
             {
-                displayTasks();
+                adminDashboard();
             }
-            else if (choice == 4)
+        }
+        else
+        {
+            break;
+        }
+        if (success)
+        {
+            while (true)
             {
-                searchTaskByName();
-            }
-            else if (choice == 5)
-            {
-                updateTaskById();
-            }
-            else if (choice == 6)
-            {
-                updateSubtaskById();
+                int choice;
+                cout << "1.create task" << endl;
+                cout << "2. show tasks" << endl;
+                cout << "3. search task by name" << endl;
+                cout << "4. show tasks by filter" << endl;
+                cout << "5. export task" << endl;
+                cout << "q. exit/logout (key number)" << endl;
+                cin >> choice;
+                cin.ignore();
+                if (choice == 1)
+                {
+                    createTask();
+                }
+                else if (choice == 2)
+                {
+                    displayTasks();
+                }
+                else if (choice == 3)
+                {
+                    searchTaskByName();
+                }
+                else if (choice == 4)
+                {
+                    displayTasksByFilter();
+                }
+                else if (choice == 5)
+                {
+                    exportStatusToJson();
+                }
+                else
+                {
+                    break;
+                }
             }
         }
     }

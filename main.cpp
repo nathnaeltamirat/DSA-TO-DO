@@ -1020,13 +1020,140 @@ bool updateSubtaskById()
     cout << "Subtask updated successfully" << endl;
     return true;
 }
+bool authenticateAdmin()
+{
+    string email, password;
+
+    cout << "\n--- Admin Authentication --\n";
+    cout << "Admin Email: ";
+    getline(cin, email);
+    cout << "Admin Password: ";
+    getline(cin, password);
+
+    for (auto &u : users)
+    {
+        if (u.email == email && u.password == password)
+        {
+            if (u.status == "admin")
+            {
+                curr_user = &u; 
+                return true;
+            }
+            else
+            {
+                cout << "Access denied: Not an admin.\n";
+                return false;
+            }
+        }
+    }
+
+    cout << "Invalid admin credentials.\n";
+    return false;
+}
+
+bool addUserAdmin()
+{ 
+    string full_name, email, password;
+
+    cout << "Enter new user's full name: ";
+    getline(cin, full_name);
+
+    cout << "Enter new user's email: ";
+    getline(cin, email);
+
+    if (emailExist(email))
+    {
+        cout << "User already exists.\n";
+        return false;
+    } 
+    cout << "Enter new user's password: ";
+    getline(cin, password);
+    User newUser; 
+    newUser.full_name = full_name;
+    newUser.email = email;
+    newUser.password = password;
+    newUser.status = "user";
+    users.push_back(newUser);
+    updateUsers();
+
+    cout << "User added successfully \n";
+    return true;
+}
+bool deleteUserAdmin()
+{
+    if (curr_user == nullptr || curr_user->status != "admin")
+    {
+        cout << "Access denied.\n";
+        return false;
+    }
+    string email;
+    cout << "Enter user email to delete: ";
+    getline(cin, email);
+    for (auto it = users.begin(); it != users.end(); ++it)
+    {
+        if (it->email == email)
+        {
+            if (it->status == "admin")
+            {
+                cout << "Cannot delete an admin user.\n";
+                return false;
+            }
+            users.erase(it);
+            updateUsers();
+            cout << "User deleted successfully.\n";
+            return true;
+        }
+    }
+
+    cout << "User not found.\n";
+    return false;
+}
+
+void viewAllUsers()
+{
+    cout << "\n-- All Users ---\n";
+    bool found = false;
+    for (const auto &u : users)
+    {
+        if (u.status == "user")
+        {
+            cout << "Name  : " << u.full_name << endl;
+            cout << "Email : " << u.email << endl;
+            found = true;
+        }
+    }
+}
+void adminDashboard()
+{
+    int choice;
+    cout << "\n===== ADMIN DASHBOARD =====\n";
+    cout << "1. Add User\n";
+    cout << "2. Delete User\n";
+    cout<<"  3.View All Users\n";
+    cout << "Enter choice: ";
+    cin >> choice;
+    cin.ignore();
+
+    if (choice == 1)
+    { 
+        addUserAdmin();
+    }
+    else if (choice == 2)
+    {
+        deleteUserAdmin();
+
+    }
+    else if(choice == 3){
+        viewAllUsers();
+    }
+}
 
 int main()
 {
     loadUsers();
     int login_choice;
     cout << "Hey user welcome to AASTU TODO App !!!" << endl;
-    cout << "1.Login\n2.Register" << endl;
+    cout << "1.Login\n2.Registerz" << endl;
     cin >> login_choice;
     cin.ignore();
     if (login_choice == 2)

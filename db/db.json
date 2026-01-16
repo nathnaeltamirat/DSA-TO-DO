@@ -23,6 +23,13 @@
         "status": "user",
         "tasks": []
     },
+        {
+        "email": "natanasnake91@gmail.com",
+        "full_name": "Natan Asnake",
+        "password": "1q2w3e4r5t",
+        "status": "admin",
+        "tasks": []
+    },
     {
         "email": "mohammedmoges@gmail.com",
         "full_name": "Mohammed Moges",

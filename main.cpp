@@ -1131,13 +1131,206 @@ bool updateSubtaskById()
     cout << "Subtask updated successfully" << endl;
     return true;
 }
+bool exportStatusToJson()
+{
+    if (curr_user == nullptr)
+    {
+        cout << "No user logged in\n";
+        return false;
+    }
+
+    int total_tasks = 0;
+    int completed_tasks = 0;
+    int uncompleted_tasks = 0;
+
+    int total_subtasks = 0;
+    int completed_subtasks = 0;
+    int uncompleted_subtasks = 0;
+
+    priority_queue<Task> temp = curr_user->tasks;
+
+    while (!temp.empty())
+    {
+        Task t = temp.top();
+        temp.pop();
+
+        total_tasks++;
+
+        if (t.isComplete)
+            completed_tasks++;
+        else
+            uncompleted_tasks++;
+
+        for (auto &st : t.subtasks)
+        {
+            total_subtasks++;
+
+            if (st.isComplete)
+                completed_subtasks++;
+            else
+                uncompleted_subtasks++;
+        }
+    }
+
+    // Create JSON object
+    json output;
+    output["user_email"] = curr_user->email;
+    output["total_tasks"] = total_tasks;
+    output["completed_tasks"] = completed_tasks;
+    output["uncompleted_tasks"] = uncompleted_tasks;
+    output["total_subtasks"] = total_subtasks;
+    output["completed_subtasks"] = completed_subtasks;
+    output["uncompleted_subtasks"] = uncompleted_subtasks;
+
+    // Write to output.json
+    ofstream out("./db/output.json");
+    if (!out.is_open())
+    {
+        cout << "Failed to open output.json\n";
+        return false;
+    }
+
+    out << output.dump(4);
+    out.close();
+
+    cout << "Status exported successfully to output.json\n";
+    return true;
+}
+
+bool authenticateAdmin()
+{
+    string email, password;
+
+    cout << "\n--- Admin Authentication --\n";
+    cout << "Admin Email: ";
+    getline(cin, email);
+    cout << "Admin Password: ";
+    getline(cin, password);
+
+    for (auto &u : users)
+    {
+        if (u.email == email && u.password == password)
+        {
+            if (u.status == "admin")
+            {
+                curr_user = &u; 
+                return true;
+            }
+            else
+            {
+                cout << "Access denied: Not an admin.\n";
+                return false;
+            }
+        }
+    }
+
+    cout << "Invalid admin credentials.\n";
+    return false;
+}
+
+bool addUserAdmin()
+{ 
+    string full_name, email, password;
+
+    cout << "Enter new user's full name: ";
+    getline(cin, full_name);
+
+    cout << "Enter new user's email: ";
+    getline(cin, email);
+
+    if (emailExist(email))
+    {
+        cout << "User already exists.\n";
+        return false;
+    } 
+    cout << "Enter new user's password: ";
+    getline(cin, password);
+    User newUser; 
+    newUser.full_name = full_name;
+    newUser.email = email;
+    newUser.password = password;
+    newUser.status = "user";
+    users.push_back(newUser);
+    updateUsers();
+
+    cout << "User added successfully \n";
+    return true;
+}
+bool deleteUserAdmin()
+{
+    if (curr_user == nullptr || curr_user->status != "admin")
+    {
+        cout << "Access denied.\n";
+        return false;
+    }
+    string email;
+    cout << "Enter user email to delete: ";
+    getline(cin, email);
+    for (auto it = users.begin(); it != users.end(); ++it)
+    {
+        if (it->email == email)
+        {
+            if (it->status == "admin")
+            {
+                cout << "Cannot delete an admin user.\n";
+                return false;
+            }
+            users.erase(it);
+            updateUsers();
+            cout << "User deleted successfully.\n";
+            return true;
+        }
+    }
+
+    cout << "User not found.\n";
+    return false;
+}
+
+void viewAllUsers()
+{
+    cout << "\n-- All Users ---\n";
+    bool found = false;
+    for (const auto &u : users)
+    {
+        if (u.status == "user")
+        {
+            cout << "Name  : " << u.full_name << endl;
+            cout << "Email : " << u.email << endl;
+            found = true;
+        }
+    }
+}
+void adminDashboard()
+{
+    int choice;
+    cout << "\n===== ADMIN DASHBOARD =====\n";
+    cout << "1. Add User\n";
+    cout << "2. Delete User\n";
+    cout<<"  3.View All Users\n";
+    cout << "Enter choice: ";
+    cin >> choice;
+    cin.ignore();
+
+    if (choice == 1)
+    { 
+        addUserAdmin();
+    }
+    else if (choice == 2)
+    {
+        deleteUserAdmin();
+
+    }
+    else if(choice == 3){
+        viewAllUsers();
+    }
+}
 
 int main()
 {
     loadUsers();
     int login_choice;
     cout << "Hey user welcome to AASTU TODO App !!!" << endl;
-    cout << "1.Login\n2.Register" << endl;
+    cout << "1.Login\n2.Registerz" << endl;
     cin >> login_choice;
     cin.ignore();
     if (login_choice == 2)

@@ -1020,6 +1020,72 @@ bool updateSubtaskById()
     cout << "Subtask updated successfully" << endl;
     return true;
 }
+bool exportStatusToJson()
+{
+    if (curr_user == nullptr)
+    {
+        cout << "No user logged in\n";
+        return false;
+    }
+
+    int total_tasks = 0;
+    int completed_tasks = 0;
+    int uncompleted_tasks = 0;
+
+    int total_subtasks = 0;
+    int completed_subtasks = 0;
+    int uncompleted_subtasks = 0;
+
+    priority_queue<Task> temp = curr_user->tasks;
+
+    while (!temp.empty())
+    {
+        Task t = temp.top();
+        temp.pop();
+
+        total_tasks++;
+
+        if (t.isComplete)
+            completed_tasks++;
+        else
+            uncompleted_tasks++;
+
+        for (auto &st : t.subtasks)
+        {
+            total_subtasks++;
+
+            if (st.isComplete)
+                completed_subtasks++;
+            else
+                uncompleted_subtasks++;
+        }
+    }
+
+    // Create JSON object
+    json output;
+    output["user_email"] = curr_user->email;
+    output["total_tasks"] = total_tasks;
+    output["completed_tasks"] = completed_tasks;
+    output["uncompleted_tasks"] = uncompleted_tasks;
+    output["total_subtasks"] = total_subtasks;
+    output["completed_subtasks"] = completed_subtasks;
+    output["uncompleted_subtasks"] = uncompleted_subtasks;
+
+    // Write to output.json
+    ofstream out("./db/output.json");
+    if (!out.is_open())
+    {
+        cout << "Failed to open output.json\n";
+        return false;
+    }
+
+    out << output.dump(4);
+    out.close();
+
+    cout << "Status exported successfully to output.json\n";
+    return true;
+}
+
 bool authenticateAdmin()
 {
     string email, password;

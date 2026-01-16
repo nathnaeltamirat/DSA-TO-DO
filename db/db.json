@@ -2,16 +2,15 @@
     {
         "email": "nathnaeltamirat3@gmail.com",
         "full_name": "nathnael tamirat",
-        "password": "1",
+        "password": "12",
         "status": "user",
         "tasks": []
     },
-        {
-        "email": "nathnaeltamirat4@gmail.com",
-        "full_name": "nathnael tamirat",
-        "password": "1",
+    {
+        "email": "kebde@gmail.com",
+        "full_name": "kebde chala",
+        "password": "12",
         "status": "user",
         "tasks": []
     }
-
 ]

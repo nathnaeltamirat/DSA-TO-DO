@@ -86,8 +86,5 @@ bool Login(const string& email, const string& password) {
 }
 
 int main() {
-    // Write C++ code here
-    std::cout << "Try programiz.pro";
-
     return 0;
 }

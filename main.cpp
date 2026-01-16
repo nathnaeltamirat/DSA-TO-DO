@@ -484,6 +484,270 @@ bool deleteSubtask()
     return true;
 }
 
+void displayTasks()
+{
+    if (curr_user == nullptr)
+    {
+        cout << "No user logged in" << endl;
+        return;
+    }
+
+    priority_queue<Task> temp = curr_user->tasks;
+    if (temp.empty())
+    {
+        cout << "No tasks found" << endl;
+        return;
+    }
+
+    while (!temp.empty())
+    {
+        Task t = temp.top();
+        temp.pop();
+
+        string p = (t.priority == 3) ? "high" : (t.priority == 2) ? "medium" : "low";
+        cout << "Task ID: " << t.id << " | Name: " << t.name << " | Priority: " << p
+             << " | Created: " << t.creation_date << " | Deadline: " << t.deadline_date << endl;
+
+        if (!t.subtasks.empty())
+        {
+            cout << "  Subtasks:" << endl;
+            for (auto &st : t.subtasks)
+            {
+                string sp = (st.priority == 3) ? "high" : (st.priority == 2) ? "medium" : "low";
+                cout << "    Subtask ID: " << st.id << " | Name: " << st.name << " | Priority: " << sp
+                     << " | Created: " << st.creation_date << " | Deadline: " << st.deadline_date << endl;
+            }
+        }
+    }
+}
+
+string toLower(const string &s)
+{
+    string r = s;
+    for (auto &c : r)
+        c = tolower((unsigned char)c);
+    return r;
+}
+
+bool searchTaskByName()
+{
+    if (curr_user == nullptr)
+    {
+        cout << "No user logged in" << endl;
+        return false;
+    }
+
+    string query;
+    cout << "Enter task name to search: ";
+    getline(cin, query);
+    if (query.empty())
+    {
+        cout << "Empty query" << endl;
+        return false;
+    }
+
+    string ql = toLower(query);
+    priority_queue<Task> temp = curr_user->tasks;
+    bool found = false;
+
+    while (!temp.empty())
+    {
+        Task t = temp.top();
+        temp.pop();
+
+        string tl = toLower(t.name);
+        if (tl.find(ql) != string::npos)
+        {
+            found = true;
+            string p = (t.priority == 3) ? "high" : (t.priority == 2) ? "medium" : "low";
+            cout << "Task ID: " << t.id << " | Name: " << t.name << " | Priority: " << p
+                 << " | Created: " << t.creation_date << " | Deadline: " << t.deadline_date << endl;
+
+            if (!t.subtasks.empty())
+            {
+                cout << "  Subtasks:" << endl;
+                for (auto &st : t.subtasks)
+                {
+                    string sp = (st.priority == 3) ? "high" : (st.priority == 2) ? "medium" : "low";
+                    cout << "    Subtask ID: " << st.id << " | Name: " << st.name << " | Priority: " << sp
+                         << " | Created: " << st.creation_date << " | Deadline: " << st.deadline_date << endl;
+                }
+            }
+        }
+    }
+
+    if (!found)
+        cout << "No matching tasks found" << endl;
+
+    return found;
+}
+
+bool updateTaskById()
+{
+    if (curr_user == nullptr)
+    {
+        cout << "No user logged in" << endl;
+        return false;
+    }
+
+    int task_id;
+    cout << "Enter Task ID to update: ";
+    cin >> task_id;
+    cin.ignore();
+
+    string new_name;
+    string priority_description;
+    int new_priority;
+    string new_deadline;
+
+    priority_queue<Task> temp;
+    bool found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task curr = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (curr.id == task_id)
+        {
+            found = true;
+            cout << "Enter new name (leave empty to keep current): ";
+            getline(cin, new_name);
+            if (!new_name.empty())
+                curr.name = new_name;
+
+            cout << "Enter new priority (high, medium, low) or leave empty: ";
+            getline(cin, priority_description);
+            if (!priority_description.empty())
+            {
+                if (priority_description == "high")
+                    new_priority = 3;
+                else if (priority_description == "medium")
+                    new_priority = 2;
+                else if (priority_description == "low")
+                    new_priority = 1;
+                else
+                {
+                    cout << "Invalid priority, keeping existing." << endl;
+                    new_priority = curr.priority;
+                }
+                curr.priority = new_priority;
+            }
+
+            cout << "Enter new deadline (yyyy/mm/dd) or leave empty: ";
+            getline(cin, new_deadline);
+            if (!new_deadline.empty())
+                curr.deadline_date = new_deadline;
+        }
+
+        temp.push(curr);
+    }
+
+    curr_user->tasks = temp;
+
+    if (!found)
+    {
+        cout << "Task ID not found" << endl;
+        return false;
+    }
+
+    updateUsers();
+    cout << "Task updated successfully" << endl;
+    return true;
+}
+
+bool updateSubtaskById()
+{
+    if (curr_user == nullptr)
+    {
+        cout << "No user logged in" << endl;
+        return false;
+    }
+
+    int task_id, subtask_id;
+    cout << "Enter parent Task ID: ";
+    cin >> task_id;
+    cin.ignore();
+
+    cout << "Enter Subtask ID to update: ";
+    cin >> subtask_id;
+    cin.ignore();
+
+    string new_name;
+    string priority_description;
+    int new_priority;
+    string new_deadline;
+
+    priority_queue<Task> temp;
+    bool task_found = false;
+    bool subtask_found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task curr = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (curr.id == task_id)
+        {
+            task_found = true;
+            for (auto &st : curr.subtasks)
+            {
+                if (st.id == subtask_id)
+                {
+                    subtask_found = true;
+                    cout << "Enter new name for subtask (leave empty to keep current): ";
+                    getline(cin, new_name);
+                    if (!new_name.empty())
+                        st.name = new_name;
+
+                    cout << "Enter new priority (high, medium, low) or leave empty: ";
+                    getline(cin, priority_description);
+                    if (!priority_description.empty())
+                    {
+                        if (priority_description == "high")
+                            new_priority = 3;
+                        else if (priority_description == "medium")
+                            new_priority = 2;
+                        else if (priority_description == "low")
+                            new_priority = 1;
+                        else
+                        {
+                            cout << "Invalid priority, keeping existing." << endl;
+                            new_priority = st.priority;
+                        }
+                        st.priority = new_priority;
+                    }
+
+                    cout << "Enter new deadline (yyyy/mm/dd) or leave empty: ";
+                    getline(cin, new_deadline);
+                    if (!new_deadline.empty())
+                        st.deadline_date = new_deadline;
+                    break;
+                }
+            }
+        }
+
+        temp.push(curr);
+    }
+
+    curr_user->tasks = temp;
+
+    if (!task_found)
+    {
+        cout << "Parent Task ID not found" << endl;
+        return false;
+    }
+    if (!subtask_found)
+    {
+        cout << "Subtask ID not found" << endl;
+        return false;
+    }
+
+    updateUsers();
+    cout << "Subtask updated successfully" << endl;
+    return true;
+}
+
 int main()
 {
     loadUsers();
@@ -503,6 +767,10 @@ int main()
             int choice;
             cout << "1.create task" << endl;
             cout << "2. create Subtask" << endl;
+            cout << "3. show tasks" << endl;
+            cout << "4. search task by name" << endl;
+            cout << "5. update task by id" << endl;
+            cout << "6. update subtask by id" << endl;
             cin >> choice;
             cin.ignore();
 
@@ -511,10 +779,19 @@ int main()
                 createTask();
             }else if (choice == 2){
                 createSubtask();
+            } else if (choice == 3) {
+                displayTasks();
+            } else if (choice == 4) {
+                searchTaskByName();
+            } else if (choice == 5) {
+                updateTaskById();
+            } else if (choice == 6) {
+                updateSubtaskById();
             }
         }
    
     }
+
 
     return 0;
 }

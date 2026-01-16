@@ -375,7 +375,114 @@ bool createSubtask()
     return true;
 }
 
+bool deleteTask()
+{
+    if (curr_user == nullptr)
+    {
+        cout << "No user logged in" << endl;
+        return false;
+    }
 
+    int task_id;
+    cout << "Enter the Task ID to delete: ";
+    cin >> task_id;
+    cin.ignore();
+
+    priority_queue<Task> temp;
+    bool found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task curr = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (curr.id == task_id)
+        {
+            found = true;
+            // Skip pushing this task → it is deleted
+        }
+        else
+        {
+            temp.push(curr);
+        }
+    }
+
+    curr_user->tasks = temp;
+
+    if (!found)
+    {
+        cout << "Task ID not found" << endl;
+        return false;
+    }
+
+    updateUsers();
+    cout << "Task deleted successfully" << endl;
+    return true;
+}
+
+bool deleteSubtask()
+{
+    if (curr_user == nullptr)
+    {
+        cout << "No user logged in" << endl;
+        return false;
+    }
+
+    int task_id, subtask_id;
+    cout << "Enter parent Task ID: ";
+    cin >> task_id;
+    cin.ignore();
+
+    cout << "Enter Subtask ID to delete: ";
+    cin >> subtask_id;
+    cin.ignore();
+
+    priority_queue<Task> temp;
+    bool task_found = false;
+    bool subtask_found = false;
+
+    while (!curr_user->tasks.empty())
+    {
+        Task curr = curr_user->tasks.top();
+        curr_user->tasks.pop();
+
+        if (curr.id == task_id)
+        {
+            task_found = true;
+
+            // Remove subtask using erase-remove_if
+            auto &subs = curr.subtasks;
+            auto it = remove_if(subs.begin(), subs.end(), [subtask_id](const Task &s) {
+                return s.id == subtask_id;
+            });
+
+            if (it != subs.end())
+            {
+                subs.erase(it, subs.end());
+                subtask_found = true;
+            }
+        }
+
+        temp.push(curr);
+    }
+
+    curr_user->tasks = temp;
+
+    if (!task_found)
+    {
+        cout << "Parent Task ID not found" << endl;
+        return false;
+    }
+    if (!subtask_found)
+    {
+        cout << "Subtask ID not found" << endl;
+        return false;
+    }
+
+    updateUsers();
+    cout << "Subtask deleted successfully" << endl;
+    return true;
+}
 
 int main()
 {

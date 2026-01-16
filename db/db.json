@@ -4,7 +4,16 @@
         "full_name": "nathnael tamirat",
         "password": "12",
         "status": "user",
-        "tasks": []
+        "tasks": [
+            {
+                "creation_date": "2026-0-16",
+                "deadline_date": "2028/02/04",
+                "id": 1878001921,
+                "name": "wash dish",
+                "priority": 1,
+                "subtasks": []
+            }
+        ]
     },
     {
         "email": "kebde@gmail.com",

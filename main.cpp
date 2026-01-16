@@ -2,7 +2,9 @@
 #include <queue>
 #include <vector>
 #include <fstream>
+#include <random>
 #include "json.hpp"
+#include <ctime>
 using namespace std;
 
 using json = nlohmann::json;
@@ -33,6 +35,7 @@ struct User
 };
 
 vector<User> users;
+User *curr_user = nullptr;
 
 vector<User> loadUsers()
 {
@@ -183,15 +186,31 @@ bool signup()
     if (saveUser(full_name, email, password))
     {
         curr_user_email = email;
+        for (auto &u : users)
+        {
+            if (u.email == curr_user_email)
+            {
+                curr_user = &u;
+            }
+        }
         cout << "Registered Successfully" << endl;
         return true;
     }
     return false;
 }
-
+string getCurrentDate()
+{
+    time_t now = time(nullptr);
+    tm *ltm = localtime(&now);
+    int year = 1900 +  ltm->tm_year;
+    int month = 1 + ltm->tm_mon;
+    int day = ltm->tm_mday;
+    return to_string(year) + "-" +
+    (month < 0 ? "0": "") + to_string(month) + "-" +
+    (day < 0 ? "0": "") + to_string(day);
+}
 bool login()
 {
-
     string email;
     string password;
 
@@ -210,6 +229,13 @@ bool login()
         if (u.email == email & u.password == password)
         {
             curr_user_email = u.email;
+            for (auto &u : users)
+            {
+                if (u.email == curr_user_email)
+                {
+                    curr_user = &u;
+                }
+            }
             cout << "registred successfull" << endl;
             return true;
         }
@@ -217,43 +243,64 @@ bool login()
     cout << "Invalid crediential" << endl;
     return false;
 }
+int generateRandomDigit()
+{
+    static random_device rd;     // seed source (non-deterministic)
+    static mt19937_64 gen(rd()); // Mersenne Twister engine
+    static uniform_int_distribution<int> dist(100000, 999999);
+
+    return dist(gen);
+}
 
 bool createTask()
 {
-    // TODO: Create Task with email:curr_user_email
+    Task new_task;
+    int id;
+    string name;
+    int priority;
+    string priority_description;
+    string creation_date;
+    string deadline_date;
+    cout << "Enter task name: ";
+    getline(cin, name);
+    cout << "Enter the priority only choose high,medium,low:";
+    getline(cin, priority_description);
+    if (priority_description == "high")
+    {
+        priority = 3;
+    }
+    else if (priority_description == "medium")
+    {
+        priority = 2;
+    }
+    else if (priority_description == "low")
+    {
+        priority = 1;
+    }
+    else
+    {
+        cout << "Invalid  priority level " << endl;
+        return false;
+    }
 
-    // take input from the user  of priority as medium high or low and change it to number as high medium or low
-    // take creation_date and deadline date in specified format
-    // generate unique id of length 6 must be unique not only random align it with curr date and other
+    cout << "Enter task deadline_date year/mm/dd: ";
+    getline(cin, deadline_date);
 
-    //     struct Task
-    // {
-    //     int id;
-    //     int priority;
-    //     string creation_date;
-    //     string deadline_date;
-    //     vector<Task> subtasks;
-    //     bool operator<(const Task &other) const
-    //     {
-    //         return priority < other.priority;
-    //     }
-    // };
-
-    // struct User
-    // {
-    //     string full_name;
-    //     string email;
-    //     string password;
-    //     string status;
-    //     priority_queue<Task> tasks;
-    // };
+    new_task.creation_date = getCurrentDate();
+    new_task.priority = priority;
+    new_task.name = name;
+    new_task.deadline_date = deadline_date;
+    curr_user->tasks.push(new_task);
+    updateUsers();
+    cout << "tasks updated successfully" << endl;
 }
+
 int main()
 {
     loadUsers();
     int login_choice;
     cout << "Hey user welcome to AASTU TODO App !!!" << endl;
-    cout << "1. Login\n2. Register" << endl;
+    cout << "1.Login\n2.Register" << endl;
     cin >> login_choice;
     cin.ignore();
     if (login_choice == 2)
@@ -262,7 +309,18 @@ int main()
     }
     else if (login_choice == 1)
     {
-        login();
+        if (login())
+        {
+            int choice;
+            cout << "1.create task" << endl;
+            cin >> choice;
+            cin.ignore();
+            if (choice == 1)
+            {
+                createTask();
+            }
+        }
+   
     }
 
     return 0;

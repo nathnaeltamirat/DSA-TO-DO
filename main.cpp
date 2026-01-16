@@ -62,7 +62,7 @@ vector<User> loadUsers()
             task.id = t["id"];
             task.priority = t["priority"];
             task.name = t["name"];
-            task.isComplete = t["isComplete"];
+            task.isComplete = t.value("isComplete", false);
             task.creation_date = t.value("creation_date", "");
             task.deadline_date = t.value("deadline_date", "");
             for (auto &st : t["subtasks"])
@@ -70,7 +70,7 @@ vector<User> loadUsers()
                 Task subtask;
                 subtask.id = st["id"];
                 subtask.name = st["name"];
-                subtask.isComplete = st["isComplete"];
+                subtask.isComplete = st.value("isComplete", false);
                 subtask.priority = st["priority"];
                 subtask.creation_date = st.value("creation_date", "");
                 subtask.deadline_date = st.value("deadline_date", "");
@@ -143,6 +143,117 @@ bool emailExist(string &email)
         }
     }
     return false;
+}
+
+void displayTasksByFilter()
+{
+    if (curr_user == nullptr)
+    {
+        cout << "No user logged in" << endl;
+        return;
+    }
+
+    vector<Task> list;
+    priority_queue<Task> temp = curr_user->tasks;
+    while (!temp.empty())
+    {
+        list.push_back(temp.top());
+        temp.pop();
+    }
+
+    cout << "Choose filter:\n1. Recently created\n2. Farest created\n3. Nearest deadline\n4. Farest deadline" << endl;
+    int fchoice;
+    cin >> fchoice;
+    cin.ignore();
+
+    auto normalizeDate = [](const string &d) -> string {
+        if (d.empty())
+            return string();
+        string s = d;
+        for (auto &c : s)
+            if (c == '/')
+                c = '-';
+        string digits;
+        for (char c : s)
+            if (isdigit((unsigned char)c))
+                digits.push_back(c);
+        // Expect YYYYMMDD
+        if (digits.size() >= 8)
+            return digits.substr(0, 8);
+        // fallback: pad to something comparable
+        while (digits.size() < 8)
+            digits.push_back('0');
+        return digits;
+    };
+
+    if (fchoice == 1)
+    {
+        sort(list.begin(), list.end(), [&](const Task &a, const Task &b)
+             { return normalizeDate(a.creation_date) > normalizeDate(b.creation_date); });
+    }
+    else if (fchoice == 2)
+    {
+        sort(list.begin(), list.end(), [&](const Task &a, const Task &b)
+             { return normalizeDate(a.creation_date) < normalizeDate(b.creation_date); });
+    }
+    else if (fchoice == 3)
+    {
+        sort(list.begin(), list.end(), [&](const Task &a, const Task &b)
+             {
+                 string da = normalizeDate(a.deadline_date);
+                 string db = normalizeDate(b.deadline_date);
+                 if (da.empty() && db.empty())
+                     return false;
+                 if (da.empty())
+                     return false; // put empty deadlines at end
+                 if (db.empty())
+                     return true;
+                 return da < db; });
+    }
+    else if (fchoice == 4)
+    {
+        sort(list.begin(), list.end(), [&](const Task &a, const Task &b)
+             {
+                 string da = normalizeDate(a.deadline_date);
+                 string db = normalizeDate(b.deadline_date);
+                 if (da.empty() && db.empty())
+                     return false;
+                 if (da.empty())
+                     return false; // place tasks with no deadline at end
+                 if (db.empty())
+                     return true;
+                 return da > db; });
+    }
+    else
+    {
+        cout << "Invalid choice" << endl;
+        return;
+    }
+
+    if (list.empty())
+    {
+        cout << "No tasks found" << endl;
+        return;
+    }
+
+    for (auto &t : list)
+    {
+        string isCompleted = t.isComplete ? "Completed" : "Not completed";
+        string p = (t.priority == 3) ? "high" : (t.priority == 2) ? "medium" : "low";
+        cout << "Task ID: " << t.id << " | Name: " << t.name << " | status: " << isCompleted << " | Priority: " << p
+             << " | Created: " << t.creation_date << " | Deadline: " << t.deadline_date << endl;
+        if (!t.subtasks.empty())
+        {
+            cout << "  Subtasks:" << endl;
+            for (auto &st : t.subtasks)
+            {
+                string sisCompleted = st.isComplete ? "Completed" : "Not completed";
+                string sp = (st.priority == 3) ? "high" : (st.priority == 2) ? "medium" : "low";
+                cout << "    Subtask ID: " << st.id << " | Name: " << st.name << " | status: " << sisCompleted << " | Priority: " << sp
+                     << " | Created: " << st.creation_date << " | Deadline: " << st.deadline_date << endl;
+            }
+        }
+    }
 }
 
 bool saveUser(
@@ -1044,6 +1155,7 @@ int main()
             cout << "4. search task by name" << endl;
             cout << "5. update task by id" << endl;
             cout << "6. update subtask by id" << endl;
+            cout << "7. show tasks by filter" << endl;
             cin >> choice;
             cin.ignore();
 
@@ -1062,6 +1174,8 @@ int main()
                 updateTaskById();
             } else if (choice == 6) {
                 updateSubtaskById();
+            } else if (choice == 7) {
+                displayTasksByFilter();
             }
         }
     }

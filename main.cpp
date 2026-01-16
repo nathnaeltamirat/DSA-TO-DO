@@ -612,6 +612,121 @@ bool deleteSubtask()
     cout << "Subtask deleted successfully" << endl;
     return true;
 }
+bool updateProfile(){
+    // Menu
+    int option;
+    cout << "Choose what to update:\n";
+    cout << "1. Full Name\n2. Email\n3. Password\n4. All\n";
+    cin >> option;
+    // validate Menu
+    if(option < 1 || option > 4){
+        cout << "Invalid option!\n";
+        return false;
+    }
+
+    cin.ignore(); 
+
+    switch(option){
+
+        case 1: {
+            string updated_name;
+            cout << "Enter the new full name:\n";
+            getline(cin, updated_name);
+
+            if(updated_name.empty()){
+                cout << "Name cannot be empty!\n";
+                return false;
+            }
+
+            curr_user->full_name = updated_name;
+            cout << "Full Name updated successfully!\n";
+            break;
+        }
+
+        case 2: {
+            string updated_email;
+            cout << "Enter the new Email:\n";
+            getline(cin, updated_email);
+
+            if(updated_email.find('@') == string::npos ||
+               updated_email.find('.') == string::npos){
+                cout << "Invalid email format!\n";
+                return false;
+            }
+
+            curr_user->email = updated_email;
+            cout << "Email updated successfully!\n";
+            break;
+        }
+
+        case 3: {
+            string updated_password, confirmed_password;
+
+            cout << "Enter the new password:\n";
+            getline(cin, updated_password);
+
+            if(updated_password.length() < 6){
+                cout << "Password must be at least 6 characters!\n";
+                return false;
+            }
+
+            cout << "Confirm the new password:\n";
+            getline(cin, confirmed_password);
+
+            if(updated_password != confirmed_password){
+                cout << "Passwords do not match!\n";
+                return false;
+            }
+
+            curr_user->password = updated_password;
+            cout << "Password updated successfully!\n";
+            break;
+        }
+
+        case 4: {
+            string upd_name, upd_email, upd_password, confirm_password;
+
+            cout << "Enter the new full name:\n";
+            getline(cin, upd_name);
+            if(upd_name.empty()){
+                cout << "Name cannot be empty!\n";
+                return false;
+            }
+
+            cout << "Enter the new Email:\n";
+            getline(cin, upd_email);
+            if(upd_email.find('@') == string::npos ||
+               upd_email.find('.') == string::npos){
+                cout << "Invalid email format!\n";
+                return false;
+            }
+
+            cout << "Enter the new Password:\n";
+            getline(cin, upd_password);
+            if(upd_password.length() < 6){
+                cout << "Password must be at least 6 characters!\n";
+                return false;
+            }
+
+            cout << "Confirm the new password:\n";
+            getline(cin, confirm_password);
+            if(upd_password != confirm_password){
+                cout << "Passwords do not match!\n";
+                return false;
+            }
+
+            curr_user->full_name = upd_name;
+            curr_user->email = upd_email;
+            curr_user->password = upd_password;
+
+            cout << "Profile updated successfully!\n";
+            break;
+        }
+    }
+    updateUsers();
+    return true;
+}
+
 
 void displayTasks()
 {

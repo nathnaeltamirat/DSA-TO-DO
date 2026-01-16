@@ -22,5 +22,21 @@
         "password": "12",
         "status": "user",
         "tasks": []
+    },
+    {
+        "email": "mohammedmoges@gmail.com",
+        "full_name": "Mohammed Moges",
+        "password": "mhmd",
+        "status": "user",
+        "tasks": [
+            {
+                "creation_date": "2026-01-16",
+                "deadline_date": "fhienla;",
+                "id": 396950,
+                "name": "wash clothes",
+                "priority": 1,
+                "subtasks": []
+            }
+        ]
     }
 ]

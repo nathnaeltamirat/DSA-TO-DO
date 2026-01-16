@@ -6,6 +6,24 @@
         "status": "user",
         "tasks": [
             {
+                "creation_date": "2026-01-17",
+                "deadline_date": "2026-01-12",
+                "id": 402730,
+                "isComplete": false,
+                "name": "present dsa",
+                "priority": 3,
+                "subtasks": [
+                    {
+                        "creation_date": "2026-01-17",
+                        "deadline_date": "2028-02-09",
+                        "id": 402730,
+                        "isComplete": false,
+                        "name": "get 10 mark",
+                        "priority": 2
+                    }
+                ]
+            },
+            {
                 "creation_date": "2026-0-16",
                 "deadline_date": "2028/02/04",
                 "id": 1878001921,
@@ -23,7 +41,7 @@
         "status": "user",
         "tasks": []
     },
-        {
+    {
         "email": "natanasnake91@gmail.com",
         "full_name": "Natan Asnake",
         "password": "1q2w3e4r5t",

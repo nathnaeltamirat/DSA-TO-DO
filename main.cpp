@@ -62,7 +62,7 @@ vector<User> loadUsers()
             task.id = t["id"];
             task.priority = t["priority"];
             task.name = t["name"];
-            task.isComplete = t["isComplete"];
+            task.isComplete = t.value("isComplete", false);
             task.creation_date = t.value("creation_date", "");
             task.deadline_date = t.value("deadline_date", "");
             for (auto &st : t["subtasks"])
@@ -70,7 +70,7 @@ vector<User> loadUsers()
                 Task subtask;
                 subtask.id = st["id"];
                 subtask.name = st["name"];
-                subtask.isComplete = st["isComplete"];
+                subtask.isComplete = st.value("isComplete", false);
                 subtask.priority = st["priority"];
                 subtask.creation_date = st.value("creation_date", "");
                 subtask.deadline_date = st.value("deadline_date", "");
@@ -169,10 +169,36 @@ bool signup()
     string confirm_password;
     cout << "Enter your full name: ";
     getline(cin, full_name);
+    if (full_name.empty())
+    {
+        cout << "Full name cannot be empty.\n";
+        return false;
+    }
     cout << "Enter your email: ";
     getline(cin, email);
+    if (email.empty())
+    {
+        cout << "Email cannot be empty.\n";
+        return false;
+    }
+    if (email.find('@') == string::npos || email.find('.') == string::npos)
+    {
+        cout << "Invalid email format.\n";
+        return false;
+    }
     cout << "Enter your password: ";
     getline(cin, password);
+    if (password.empty())
+    {
+        cout << "Password cannot be empty.\n";
+        return false;
+    }
+    if (password.length() < 6)
+    {
+        cout << "Password must be at least 6 characters long.\n";
+        return false;
+    }
+
     cout << "Confirm your password: ";
     getline(cin, confirm_password);
     if (password != confirm_password)
@@ -348,6 +374,17 @@ bool login()
     getline(cin, email);
     cout << "Enter your password: ";
     getline(cin, password);
+    if (email.empty() || password.empty())
+    {
+        cout << "Email and password cannot be empty.\n";
+        return false;
+    }
+
+    if (email.find('@') == string::npos || email.find('.') == string::npos)
+    {
+        cout << "Invalid email format.\n";
+        return false;
+    }
 
     if (!emailExist(email))
     {
@@ -393,6 +430,12 @@ bool createTask()
     string deadline_date;
     cout << "Enter task name: ";
     getline(cin, name);
+    if (name.empty())
+    {
+        cout << "Task name cannot be empty.\n";
+        return false;
+    }
+
     cout << "Enter the priority only choose high,medium,low:";
     getline(cin, priority_description);
     if (priority_description == "high")
@@ -415,6 +458,50 @@ bool createTask()
 
     cout << "Enter task deadline_date year/mm/dd: ";
     getline(cin, deadline_date);
+    // Empty check
+    if (deadline_date.empty())
+    {
+        cout << "Deadline cannot be empty.\n";
+        return false;
+    }
+
+    // Format check: yyyy/mm/dd
+    if (deadline_date.length() != 10 ||
+        deadline_date[4] != '/' ||
+        deadline_date[7] != '/')
+    {
+        cout << "Invalid date format. Use yyyy/mm/dd\n";
+        return false;
+    }
+
+    // Digit check
+    for (int i = 0; i < 10; i++)
+    {
+        if (i == 4 || i == 7)
+            continue;
+        if (!isdigit(deadline_date[i]))
+        {
+            cout << "Date must contain only digits (yyyy/mm/dd)\n";
+            return false;
+        }
+    }
+
+    // Logical range check
+    int year = stoi(deadline_date.substr(0, 4));
+    int month = stoi(deadline_date.substr(5, 2));
+    int day = stoi(deadline_date.substr(8, 2));
+
+    if (month < 1 || month > 12)
+    {
+        cout << "Invalid month value.\n";
+        return false;
+    }
+
+    if (day < 1 || day > 31)
+    {
+        cout << "Invalid day value.\n";
+        return false;
+    }
 
     new_task.id = generateRandomDigit();
     new_task.creation_date = getCurrentDate();
@@ -439,6 +526,13 @@ bool createSubtask()
     int task_id;
     cout << "Enter parent task ID: ";
     cin >> task_id;
+    if (cin.fail())
+    {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid task ID.\n";
+        return false;
+    }
     cin.ignore();
 
     string name;
@@ -460,6 +554,11 @@ bool createSubtask()
 
             cout << "Enter subtask name: ";
             getline(cin, name);
+            if (name.empty())
+            {
+                cout << "Subtask name cannot be empty.\n";
+                return false;
+            }
 
             cout << "Enter priority (high, medium, low): ";
             getline(cin, priority_description);
@@ -478,6 +577,50 @@ bool createSubtask()
 
             cout << "Enter subtask deadline (yyyy/mm/dd): ";
             getline(cin, deadline_date);
+            // Empty check
+            if (deadline_date.empty())
+            {
+                cout << "Deadline cannot be empty.\n";
+                return false;
+            }
+
+            // Format check: yyyy/mm/dd
+            if (deadline_date.length() != 10 ||
+                deadline_date[4] != '/' ||
+                deadline_date[7] != '/')
+            {
+                cout << "Invalid date format. Use yyyy/mm/dd\n";
+                return false;
+            }
+
+            // Digit check
+            for (int i = 0; i < 10; i++)
+            {
+                if (i == 4 || i == 7)
+                    continue;
+                if (!isdigit(deadline_date[i]))
+                {
+                    cout << "Date must contain only digits (yyyy/mm/dd)\n";
+                    return false;
+                }
+            }
+
+            // Logical range check
+            int year = stoi(deadline_date.substr(0, 4));
+            int month = stoi(deadline_date.substr(5, 2));
+            int day = stoi(deadline_date.substr(8, 2));
+
+            if (month < 1 || month > 12)
+            {
+                cout << "Invalid month value.\n";
+                return false;
+            }
+
+            if (day < 1 || day > 31)
+            {
+                cout << "Invalid day value.\n";
+                return false;
+            }
 
             Task subtask;
             subtask.id = generateRandomDigit();
@@ -516,6 +659,13 @@ bool deleteTask()
     int task_id;
     cout << "Enter the Task ID to delete: ";
     cin >> task_id;
+    if (cin.fail())
+    {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid task ID.\n";
+        return false;
+    }
     cin.ignore();
 
     priority_queue<Task> temp;
@@ -561,10 +711,25 @@ bool deleteSubtask()
     int task_id, subtask_id;
     cout << "Enter parent Task ID: ";
     cin >> task_id;
+    if (cin.fail())
+    {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid task ID.\n";
+        return false;
+    }
     cin.ignore();
 
     cout << "Enter Subtask ID to delete: ";
     cin >> subtask_id;
+    
+    if (cin.fail())
+    {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid subtask ID.\n";
+        return false;
+    }
     cin.ignore();
 
     priority_queue<Task> temp;
@@ -612,121 +777,145 @@ bool deleteSubtask()
     cout << "Subtask deleted successfully" << endl;
     return true;
 }
-bool updateProfile(){
+bool updateProfile()
+{
     // Menu
     int option;
     cout << "Choose what to update:\n";
     cout << "1. Full Name\n2. Email\n3. Password\n4. All\n";
     cin >> option;
     // validate Menu
-    if(option < 1 || option > 4){
+    if (option < 1 || option > 4)
+    {
         cout << "Invalid option!\n";
         return false;
     }
 
-    cin.ignore(); 
+    cin.ignore();
 
-    switch(option){
+    switch (option)
+    {
 
-        case 1: {
-            string updated_name;
-            cout << "Enter the new full name:\n";
-            getline(cin, updated_name);
+    case 1:
+    {
+        string updated_name;
+        cout << "Enter the new full name:\n";
+        getline(cin, updated_name);
 
-            if(updated_name.empty()){
-                cout << "Name cannot be empty!\n";
-                return false;
-            }
-
-            curr_user->full_name = updated_name;
-            cout << "Full Name updated successfully!\n";
-            break;
+        if (updated_name.empty())
+        {
+            cout << "Name cannot be empty!\n";
+            return false;
         }
 
-        case 2: {
-            string updated_email;
-            cout << "Enter the new Email:\n";
-            getline(cin, updated_email);
+        curr_user->full_name = updated_name;
+        cout << "Full Name updated successfully!\n";
+        break;
+    }
 
-            if(updated_email.find('@') == string::npos ||
-               updated_email.find('.') == string::npos){
-                cout << "Invalid email format!\n";
-                return false;
-            }
+    case 2:
+    {
+        string updated_email;
+        cout << "Enter the new Email:\n";
+        getline(cin, updated_email);
 
-            curr_user->email = updated_email;
-            cout << "Email updated successfully!\n";
-            break;
+        if (updated_email.find('@') == string::npos ||
+            updated_email.find('.') == string::npos)
+        {
+            cout << "Invalid email format!\n";
+            return false;
+        }
+        if (emailExist(updated_email))
+        {
+            cout << "Email already exists.\n";
+            return false;
         }
 
-        case 3: {
-            string updated_password, confirmed_password;
+        curr_user->email = updated_email;
+        cout << "Email updated successfully!\n";
+        break;
+    }
 
-            cout << "Enter the new password:\n";
-            getline(cin, updated_password);
+    case 3:
+    {
+        string updated_password, confirmed_password;
 
-            if(updated_password.length() < 6){
-                cout << "Password must be at least 6 characters!\n";
-                return false;
-            }
+        cout << "Enter the new password:\n";
+        getline(cin, updated_password);
 
-            cout << "Confirm the new password:\n";
-            getline(cin, confirmed_password);
-
-            if(updated_password != confirmed_password){
-                cout << "Passwords do not match!\n";
-                return false;
-            }
-
-            curr_user->password = updated_password;
-            cout << "Password updated successfully!\n";
-            break;
+        if (updated_password.length() < 6)
+        {
+            cout << "Password must be at least 6 characters!\n";
+            return false;
         }
 
-        case 4: {
-            string upd_name, upd_email, upd_password, confirm_password;
+        cout << "Confirm the new password:\n";
+        getline(cin, confirmed_password);
 
-            cout << "Enter the new full name:\n";
-            getline(cin, upd_name);
-            if(upd_name.empty()){
-                cout << "Name cannot be empty!\n";
-                return false;
-            }
-
-            cout << "Enter the new Email:\n";
-            getline(cin, upd_email);
-            if(upd_email.find('@') == string::npos ||
-               upd_email.find('.') == string::npos){
-                cout << "Invalid email format!\n";
-                return false;
-            }
-
-            cout << "Enter the new Password:\n";
-            getline(cin, upd_password);
-            if(upd_password.length() < 6){
-                cout << "Password must be at least 6 characters!\n";
-                return false;
-            }
-
-            cout << "Confirm the new password:\n";
-            getline(cin, confirm_password);
-            if(upd_password != confirm_password){
-                cout << "Passwords do not match!\n";
-                return false;
-            }
-
-            curr_user->full_name = upd_name;
-            curr_user->email = upd_email;
-            curr_user->password = upd_password;
-
-            cout << "Profile updated successfully!\n";
-            break;
+        if (updated_password != confirmed_password)
+        {
+            cout << "Passwords do not match!\n";
+            return false;
         }
+
+        curr_user->password = updated_password;
+        cout << "Password updated successfully!\n";
+        break;
+    }
+
+    case 4:
+    {
+        string upd_name, upd_email, upd_password, confirm_password;
+
+        cout << "Enter the new full name:\n";
+        getline(cin, upd_name);
+        if (upd_name.empty())
+        {
+            cout << "Name cannot be empty!\n";
+            return false;
+        }
+
+        cout << "Enter the new Email:\n";
+        getline(cin, upd_email);
+        if (upd_email.find('@') == string::npos ||
+            upd_email.find('.') == string::npos)
+        {
+            cout << "Invalid email format!\n";
+            return false;
+        }
+        if (emailExist(upd_email))
+        {
+            cout << "Email already exists.\n";
+            return false;
+        }
+
+        cout << "Enter the new Password:\n";
+        getline(cin, upd_password);
+        if (upd_password.length() < 6)
+        {
+            cout << "Password must be at least 6 characters!\n";
+            return false;
+        }
+
+        cout << "Confirm the new password:\n";
+        getline(cin, confirm_password);
+        if (upd_password != confirm_password)
+        {
+            cout << "Passwords do not match!\n";
+            return false;
+        }
+
+        curr_user->full_name = upd_name;
+        curr_user->email = upd_email;
+        curr_user->password = upd_password;
+
+        cout << "Profile updated successfully!\n";
+        break;
+    }
     }
     updateUsers();
     return true;
 }
-
 
 void displayTasks()
 {
@@ -747,14 +936,18 @@ void displayTasks()
     {
         Task t = temp.top();
         temp.pop();
-                string isCompleted;
-                if(t.isComplete == true){
-                    isCompleted = "Completed";
-                }else{
-                    isCompleted = "Not completed";
-                }
-        string p = (t.priority == 3) ? "high" : (t.priority == 2) ? "medium" : "low";
-        cout << "Task ID: " << t.id << " | Name: " << t.name << " | status: "<<isCompleted << "  | Priority: " << p
+        string isCompleted;
+        if (t.isComplete == true)
+        {
+            isCompleted = "Completed";
+        }
+        else
+        {
+            isCompleted = "Not completed";
+        }
+        string p = (t.priority == 3) ? "high" : (t.priority == 2) ? "medium"
+                                                                  : "low";
+        cout << "Task ID: " << t.id << " | Name: " << t.name << " | status: " << isCompleted << "  | Priority: " << p
              << " | Created: " << t.creation_date << " | Deadline: " << t.deadline_date << endl;
 
         if (!t.subtasks.empty())
@@ -763,13 +956,17 @@ void displayTasks()
             for (auto &st : t.subtasks)
             {
                 string isCompleted;
-                if(st.isComplete == true){
+                if (st.isComplete == true)
+                {
                     isCompleted = "Completed";
-                }else{
+                }
+                else
+                {
                     isCompleted = "Not completed";
                 }
-                string sp = (st.priority == 3) ? "high" : (st.priority == 2) ? "medium" : "low";
-                cout << "    Subtask ID: " << st.id << " | Name: " << st.name << " | status: "<<isCompleted << " | Priority: " << sp
+                string sp = (st.priority == 3) ? "high" : (st.priority == 2) ? "medium"
+                                                                             : "low";
+                cout << "    Subtask ID: " << st.id << " | Name: " << st.name << " | status: " << isCompleted << " | Priority: " << sp
                      << " | Created: " << st.creation_date << " | Deadline: " << st.deadline_date << endl;
             }
         }
@@ -814,7 +1011,8 @@ bool searchTaskByName()
         if (tl.find(ql) != string::npos)
         {
             found = true;
-            string p = (t.priority == 3) ? "high" : (t.priority == 2) ? "medium" : "low";
+            string p = (t.priority == 3) ? "high" : (t.priority == 2) ? "medium"
+                                                                      : "low";
             string isCompleted;
             if (t.isComplete == true)
             {
@@ -832,7 +1030,8 @@ bool searchTaskByName()
                 cout << "  Subtasks:" << endl;
                 for (auto &st : t.subtasks)
                 {
-                    string sp = (st.priority == 3) ? "high" : (st.priority == 2) ? "medium" : "low";
+                    string sp = (st.priority == 3) ? "high" : (st.priority == 2) ? "medium"
+                                                                                 : "low";
                     string sisCompleted;
                     if (st.isComplete == true)
                     {
@@ -866,6 +1065,13 @@ bool updateTaskById()
     int task_id;
     cout << "Enter Task ID to update: ";
     cin >> task_id;
+    if (cin.fail())
+    {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid task ID.\n";
+        return false;
+    }
     cin.ignore();
 
     string new_name;
@@ -909,8 +1115,47 @@ bool updateTaskById()
 
             cout << "Enter new deadline (yyyy/mm/dd) or leave empty: ";
             getline(cin, new_deadline);
-            if (!new_deadline.empty())
-                curr.deadline_date = new_deadline;
+
+                // Format check yyyy/mm/dd
+                if (new_deadline.length() != 10 ||
+                    new_deadline[4] != '/' ||
+                    new_deadline[7] != '/')
+                {
+                    cout << "Invalid date format. Use yyyy/mm/dd\n";
+                    return false;
+                }
+
+                // Digit check
+                for (int i = 0; i < 10; i++)
+                {
+                    if (i == 4 || i == 7)
+                        continue;
+                    if (!isdigit(new_deadline[i]))
+                    {
+                        cout << "Date must contain only digits.\n";
+                        return false;
+                    }
+                }
+
+                int year = stoi(new_deadline.substr(0, 4));
+                int month = stoi(new_deadline.substr(5, 2));
+                int day = stoi(new_deadline.substr(8, 2));
+
+                if (month < 1 || month > 12)
+                {
+                    cout << "Invalid month value.\n";
+                    return false;
+                }
+
+                if (day < 1 || day > 31)
+                {
+                    cout << "Invalid day value.\n";
+                    return false;
+                }
+
+              
+
+            curr.deadline_date = new_deadline;
         }
 
         temp.push(curr);
@@ -941,10 +1186,24 @@ bool updateSubtaskById()
     cout << "Enter parent Task ID: ";
     cin >> task_id;
     cin.ignore();
+    if (cin.fail())
+    {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid ID input.\n";
+        return false;
+    }
 
     cout << "Enter Subtask ID to update: ";
     cin >> subtask_id;
     cin.ignore();
+    if (cin.fail())
+    {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid ID input.\n";
+        return false;
+    }
 
     string new_name;
     string priority_description;
@@ -993,8 +1252,46 @@ bool updateSubtaskById()
 
                     cout << "Enter new deadline (yyyy/mm/dd) or leave empty: ";
                     getline(cin, new_deadline);
-                    if (!new_deadline.empty())
-                        st.deadline_date = new_deadline;
+                
+                        // Format check yyyy/mm/dd
+                        if (new_deadline.length() != 10 ||
+                            new_deadline[4] != '/' ||
+                            new_deadline[7] != '/')
+                        {
+                            cout << "Invalid date format. Use yyyy/mm/dd\n";
+                            return false;
+                        }
+
+                        // Digit check
+                        for (int i = 0; i < 10; i++)
+                        {
+                            if (i == 4 || i == 7)
+                                continue;
+                            if (!isdigit(new_deadline[i]))
+                            {
+                                cout << "Date must contain only digits.\n";
+                                return false;
+                            }
+                        }
+
+                        int year = stoi(new_deadline.substr(0, 4));
+                        int month = stoi(new_deadline.substr(5, 2));
+                        int day = stoi(new_deadline.substr(8, 2));
+
+                        if (month < 1 || month > 12)
+                        {
+                            cout << "Invalid month value.\n";
+                            return false;
+                        }
+
+                        if (day < 1 || day > 31)
+                        {
+                            cout << "Invalid day value.\n";
+                            return false;
+                        }
+
+    
+                    st.deadline_date = new_deadline;
                     break;
                 }
             }
@@ -1102,7 +1399,7 @@ bool authenticateAdmin()
         {
             if (u.status == "admin")
             {
-                curr_user = &u; 
+                curr_user = &u;
                 return true;
             }
             else
@@ -1118,23 +1415,36 @@ bool authenticateAdmin()
 }
 
 bool addUserAdmin()
-{ 
+{
     string full_name, email, password;
 
     cout << "Enter new user's full name: ";
     getline(cin, full_name);
-
     cout << "Enter new user's email: ";
     getline(cin, email);
-
+    if (email.find('@') == string::npos || email.find('.') == string::npos)
+    {
+        cout << "Invalid email format.\n";
+        return false;
+    }
     if (emailExist(email))
     {
         cout << "User already exists.\n";
         return false;
-    } 
+    }
     cout << "Enter new user's password: ";
     getline(cin, password);
-    User newUser; 
+    if (password.length() < 6)
+    {
+        cout << "Password must be at least 6 characters.\n";
+        return false;
+    }
+    if (full_name.empty() || email.empty() || password.empty())
+    {
+        cout << "All fields are required.\n";
+        return false;
+    }
+    User newUser;
     newUser.full_name = full_name;
     newUser.email = email;
     newUser.password = password;
@@ -1195,21 +1505,21 @@ void adminDashboard()
     cout << "\n===== ADMIN DASHBOARD =====\n";
     cout << "1. Add User\n";
     cout << "2. Delete User\n";
-    cout<<"  3.View All Users\n";
+    cout << "  3.View All Users\n";
     cout << "Enter choice: ";
     cin >> choice;
     cin.ignore();
 
     if (choice == 1)
-    { 
+    {
         addUserAdmin();
     }
     else if (choice == 2)
     {
         deleteUserAdmin();
-
     }
-    else if(choice == 3){
+    else if (choice == 3)
+    {
         viewAllUsers();
     }
 }
@@ -1221,6 +1531,14 @@ int main()
     cout << "Hey user welcome to AASTU TODO App !!!" << endl;
     cout << "1.Login\n2.Registerz" << endl;
     cin >> login_choice;
+    if (cin.fail() || (login_choice != 1 && login_choice != 2))
+    {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid choice. Please enter 1 or 2.\n";
+        return 0;
+    }
+
     cin.ignore();
     if (login_choice == 2)
     {
@@ -1247,18 +1565,25 @@ int main()
             else if (choice == 2)
             {
                 createSubtask();
-            } else if (choice == 3) {
+            }
+            else if (choice == 3)
+            {
                 displayTasks();
-            } else if (choice == 4) {
+            }
+            else if (choice == 4)
+            {
                 searchTaskByName();
-            } else if (choice == 5) {
+            }
+            else if (choice == 5)
+            {
                 updateTaskById();
-            } else if (choice == 6) {
+            }
+            else if (choice == 6)
+            {
                 updateSubtaskById();
             }
         }
     }
-
 
     return 0;
 }
